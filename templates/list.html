@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container vh-100">
+
+    <h1>{% block title %} Active reservations {% endblock %}</h1>
+
+    <form method="post">
+        <div class="row">
+            <div class="form-group col-md-12">
+                <label for="target">Target</label>
+                <select name="target" class="form-control">
+                    <option selected>all</option>
+                    <option>rest-bfsw01</option>
+                    <option>rest-bfsw02</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group col-md-6">
+                <label for="datetimepicker1">From:</label>
+                <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
+                    <!-- <input type="text" name="datetime" class="form-control datetimepicker-input" data-target="#datetimepicker1"/> -->
+                    <input type="text" name="from" class="form-control on-change-submit" />
+                    <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group col-md-6">
+                <label for="datetimepicker2">To:</label>
+                <div class="input-group date" id="datetimepicker2" data-target-input="nearest">
+                    <!-- <input type="text" name="datetime" class="form-control datetimepicker-input" data-target="#datetimepicker1"/> -->
+                    <input type="text" name="to" class="form-control" />
+                    <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker">
+                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Username</th>
+                <th scope="col">Target</th>
+                <th scope="col">From</th>
+                <th scope="col">To</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rsvp in reservations %}
+            <tr>
+                <td>{{ rsvp.username }}</td>
+                <td>{{ rsvp.target }}</td>
+                <td>{{ rsvp.from }}</td>
+                <td>{{ rsvp.to }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
