@@ -1,8 +1,24 @@
 from flask import Flask, flash, redirect, render_template, request, url_for, session
 import pandas as pd
+import os
+
+# create database tables if they doesn't exist
+tables = {
+    '.data/reservations.csv' : ['username', 'target', 'from', 'to'],
+    '.data/users.csv' : ['username']
+}
+
+for k,v in tables.items():
+    try:
+        pd.read_csv(k)
+    except:
+        pd.DataFrame(columns=v).to_csv(k, index=False)
+
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your secret key'
+
+secret_key = os.urandom(16).hex()
+app.config['SECRET_KEY'] = secret_key
 
 # ------------ utils ------------
 
