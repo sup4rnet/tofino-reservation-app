@@ -64,7 +64,7 @@ def create():
     users = df.to_dict(orient='records')
 
     if request.method == 'POST':
-        if 'check' in request.form: # form submitted
+        if 'check' in request.form: # user asked available slots
             
             target = request.form['target']
             datefrom = pd.to_datetime(request.form['from'])
@@ -95,7 +95,7 @@ def create():
                                    show_rsvp=show_rsvp,
                                    reservations=rsvp_df.to_dict(orient='records'))
 
-        elif 'reserve' in request.form:
+        elif 'reserve' in request.form: # user wants to reserve
             rsvp = {
                 'from' : session['from'] ,
                 'username': request.form['username'],
@@ -103,6 +103,7 @@ def create():
                 'target': session['target']
             }
             
+            # return None if valid, error message otherwise
             msg = is_valid(rsvp)
             
             if msg:
@@ -112,8 +113,7 @@ def create():
                 save(rsvp)
                 return redirect(url_for('confirm'))
     
-    else:   # GET 
-        #session.clear()
+    else:   # GET (first time we load the page)
         return render_template('create.html', users=users)
 
 # @app.route('/list', methods=('GET', 'POST'))
@@ -129,6 +129,7 @@ def create():
 
 @app.route('/confirm', methods=('GET', 'POST'))
 def confirm():
+    session.clear()
     return render_template('confirm.html')
 
 @app.route('/about', methods=('GET', 'POST'))
