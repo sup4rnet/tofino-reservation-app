@@ -9,9 +9,7 @@ tables = {
 }
 
 for k,v in tables.items():
-    try:
-        pd.read_csv(k)
-    except:
+    if not os.path.exists(k):
         pd.DataFrame(columns=v).to_csv(k, index=False)
 
 
