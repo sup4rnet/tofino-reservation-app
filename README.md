@@ -9,5 +9,16 @@ It is built using Flask framework.
 
 User reservations are stored in a csv file under `.data/` folder. Manual edits to the file will be reflected in the dashboard by reloading the webpage.
 
+## Development
+
+### Prerequisites
+
+Install `requirements.txt` using
+
+### Run Flask app
+```bash
+export FLASK_APP=server.py && flask run
+```
+
 
 
