@@ -3,6 +3,11 @@
 {% block content %}
 
 <div class="container vh-100">
+
+    <!-- New "My Reservations" section, inlcude list.hmtl -->
+    {% include 'list.html' %}
+    
+
     <h1>{% block title %} Create new reservation {% endblock %}</h1>
 
     <form method="post">
@@ -31,12 +36,28 @@
         <div class="form-group">
             <label for="datetimepicker2">To:</label>
             <div class="input-group date" id="datetimepicker2" data-target-input="nearest">
-                <!-- <input type="text" name="datetime" class="form-control datetimepicker-input" data-target="#datetimepicker1"/> -->
-                <input type="text" name="to" class="form-control" />
+                <input type="text" name="to" class="form-control" id="toDatePicker" />
                 <div class="input-group-append" data-target="#datetimepicker2" data-toggle="datetimepicker">
                     <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                 </div>
             </div>
+            <script>
+                // Set default value for "to" date to now + 1 day
+                document.addEventListener('DOMContentLoaded', function() {
+                    let tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    
+                    // Format the date as YYYY-MM-DD HH:MM
+                    let year = tomorrow.getFullYear();
+                    let month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+                    let day = String(tomorrow.getDate()).padStart(2, '0');
+                    let hours = String(tomorrow.getHours()).padStart(2, '0');
+                    let minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+                    
+                    let formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
+                    document.getElementById('toDatePicker').value = formattedDate;
+                });
+            </script>
         </div>
 
         <div class="form-group">

@@ -1,11 +1,17 @@
 from flask import Flask, flash, redirect, render_template, request, url_for, session
 import pandas as pd
 import os
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
 MAX_DURATION_LOW_PRIO_HOURS = 24
 STATUS_CODE_OK = 0
-STATUS_CODE_BUSY = 1
-STATUS_CODE_BUSY_LOW_PRIO = 2
+STATUS_CODE_BUSY = -1
+STATUS_CODE_BUSY_LOW_PRIO = -2
+STATUS_CODE_ALREADY_RESERVED = -3
+
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD_HASH = generate_password_hash("admin123")  # Default password: admin123
 
 # create database tables if they doesn't exist
 tables = {
@@ -87,6 +93,10 @@ def validate(rsvp):
      allowed to overtake, delete the conflicting reservation and return None."""
     
     current_rsvp = get_all_reservations()
+
+    # if user already has a not finished reservation, return error
+    if len(current_rsvp[(current_rsvp['username'] == rsvp['username']) & (current_rsvp['to'] > pd.to_datetime('now'))]) > 0:
+        return STATUS_CODE_ALREADY_RESERVED
     
     df = current_rsvp[current_rsvp['target'] == rsvp['target']]
     rsvp['from'] = pd.to_datetime(rsvp['from'])
@@ -102,11 +112,8 @@ def validate(rsvp):
         
     update_database(current_rsvp, override=True)
     
-    if s == STATUS_CODE_BUSY:
-        return -1
-
-    new_id = current_rsvp['id'].max() + 1 if len(current_rsvp) > 0 else 0
-    return new_id
+    s = current_rsvp['id'].max() + 1 if len(current_rsvp) > 0 else 0
+    return s
 
 def update_database(df, override=False):
     df.to_csv('.data/reservations.csv', 
@@ -167,11 +174,11 @@ def create():
                 flash('The target is available, proceed with button below.', category='success')
                 allow = True
             
-            print(len(rsvp_df))
             return render_template('create.html',
                                    users=users,
                                    show_rsvp=show_rsvp,
                                    reservations=rsvp_df.to_dict(orient='records'),
+                                   selected_username=session.get('username', None),
                                    show_rsvp_button=allow,)
 
         elif 'reserve' in request.form: # user wants to reserve
@@ -187,8 +194,11 @@ def create():
             new_id = validate(rsvp)
             
             if new_id < 0:
-                # error, not possible to reserve
-                flash('The target is not available in the selected time range. Please find a different time.', category='danger')
+                if new_id == STATUS_CODE_ALREADY_RESERVED:
+                    flash('You already have a reservation in progress. Please finish it before making a new one.', category='danger')
+                elif new_id == STATUS_CODE_BUSY:    
+                    # error, not possible to reserve
+                    flash('The target is not available in the selected time range. Please find a different time.', category='danger')
                 return redirect(url_for('create'))
             else:
                 # reserve!
@@ -197,12 +207,98 @@ def create():
                 return redirect(url_for('confirm'))
     
     else:   # GET (first time we load the page)
-        return render_template('create.html', users=users)
+        username = session.get('username', None)
+        reservations = session.get('reservations', None)
+        return render_template('create.html', users=users, selected_username=username, reservations=reservations)
 
-@app.route('/list', methods=('GET', 'POST'))
-def list():
-    pass
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            flash('Admin login required', 'danger')
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, password):
+            session['admin_logged_in'] = True
+            flash('Admin login successful', 'success')
+            return redirect(url_for('create'))
+        else:
+            flash('Invalid credentials', 'danger')
     
+    return render_template('admin_login.html')
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    flash('Admin logged out', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/delete_reservation', methods=['POST'])
+@admin_required
+def delete_reservation():
+    reservation_id = request.form.get('reservation_id')
+    username = request.form.get('username', '')
+    
+    if reservation_id:
+        # Get all reservations
+        reservations = get_all_reservations()
+        
+        # Find and remove the reservation with the given ID
+        if int(reservation_id) in reservations['id'].values:
+            reservations = reservations[reservations['id'] != int(reservation_id)]
+            reservations.to_csv('.data/reservations.csv', index=False)
+            flash('Reservation deleted successfully', 'success')
+        else:
+            flash('Reservation not found', 'danger')
+    
+    # Redirect back to the list view with the same username filter
+    if username:
+        return redirect(url_for('list', username=username))
+    else:
+        return redirect(url_for('list'))
+    
+
+@app.route('/list')
+def list():
+    """
+    Display all reservations for a specific user
+    """
+    # Get username from query parameters (sent from the form in create.html)
+    username = request.args.get('username', None)
+    
+    # Get all reservations
+    reservations = get_all_reservations()
+    
+    # Filter by username if provided
+    if username:
+        reservations = reservations[(reservations['username'] == username) & (reservations['to'] > pd.to_datetime('now'))]
+        
+    # Sort reservations by start date
+    reservations = reservations.sort_values(by=['from'], ascending=True)
+    
+    # Get the list of users for the dropdown
+    users_df = pd.read_csv('.data/users.csv')
+    users = users_df.to_dict(orient='records')
+    
+    session['username'] = username
+    session['reservations'] = reservations.to_dict(orient='records')
+
+    return redirect(url_for('create'))
+    # render_template(
+    #     'create.html',
+    #     reservations=reservations.to_dict(orient='records'),
+    #     users=users,
+    #     selected_username=username
+    # )    
 
 @app.route('/confirm', methods=('GET', 'POST'))
 def confirm():
@@ -212,3 +308,35 @@ def confirm():
 @app.route('/about', methods=('GET', 'POST'))
 def about():
     return render_template('about.html')
+
+@app.route('/toggle_priority', methods=['POST'])
+@admin_required
+def toggle_priority():
+    reservation_id = request.form.get('reservation_id')
+    username = request.form.get('username', '')
+    
+    if reservation_id:
+        # Get all reservations
+        reservations = get_all_reservations()
+        
+        # Find the reservation with the given ID
+        if int(reservation_id) in reservations['id'].values:
+            # Get the current priority status
+            idx = reservations.index[reservations['id'] == int(reservation_id)][0]
+            
+            # Toggle the priority
+            reservations.at[idx, 'high_priority'] = not reservations.at[idx, 'high_priority']
+            
+            # Save the changes
+            reservations.to_csv('.data/reservations.csv', index=False)
+            
+            new_status = "high" if reservations.at[idx, 'high_priority'] else "low"
+            flash(f'Reservation priority updated to {new_status}', 'success')
+        else:
+            flash('Reservation not found', 'danger')
+    
+    # Redirect back to the list view with the same username filter
+    if username:
+        return redirect(url_for('list', username=username))
+    else:
+        return redirect(url_for('list'))
