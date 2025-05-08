@@ -13,6 +13,7 @@ STATUS_CODE_ALREADY_RESERVED = -3
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_HASH = generate_password_hash("admin123")  # Default password: admin123
 
+# ----------- some global actions ----------------
 # create database tables if they doesn't exist
 tables = {
     '.data/reservations.csv' : ['id', 'username', 'target', 'from', 'to', 'high_priority'],
@@ -23,6 +24,9 @@ for k,v in tables.items():
     if not os.path.exists(k):
         pd.DataFrame(columns=v).to_csv(k, index=False)
 
+df = pd.read_csv('.data/users.csv')
+USERS = df.to_dict(orient='records')
+# ----------- some global actions ----------------
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 app = Flask(__name__)
@@ -107,12 +111,12 @@ def validate(rsvp):
     # check if target is available in the selected time range (must meet all critieria)
     conflicts, s = check_conflicting(df, rsvp['from'], rsvp['to'])
 
-    for _id in conflicts['id'].values:
-        # delete the conflicting reservation
-        print("Conflicting ID:", _id)
-        current_rsvp = current_rsvp[current_rsvp['id'] != _id]
-        
-    update_database(current_rsvp, override=True)
+    if len(conflicts):
+        # find and delete the conflicting reservation
+        for _id in conflicts['id'].values:
+            print("Conflicting ID:", _id)
+            current_rsvp = current_rsvp[current_rsvp['id'] != _id]
+        update_database(current_rsvp, override=True)
     
     s = current_rsvp['id'].max() + 1 if len(current_rsvp) > 0 else 0
     return s
@@ -128,14 +132,11 @@ def update_database(df, override=False):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return get_create_page()
 
 
 @app.route('/create', methods=('GET', 'POST'))
 def create():
-
-    df = pd.read_csv('.data/users.csv')
-    users = df.to_dict(orient='records')
 
     if request.method == 'POST':
         if 'check' in request.form: # user asked available slots
@@ -177,7 +178,7 @@ def create():
                 allow = True
             
             return render_template('create.html',
-                                   users=users,
+                                   users=USERS,
                                    show_rsvp=show_rsvp,
                                    reservations=rsvp_df.to_dict(orient='records'),
                                    selected_username=session.get('username', None),
@@ -209,10 +210,12 @@ def create():
                 return redirect(url_for('confirm'))
     
     else:   # GET (first time we load the page)
-        username = session.get('username', None)
-        reservations = session.get('reservations', None)
-        return render_template('create.html', users=users, selected_username=username, reservations=reservations)
+        return get_create_page()
 
+def get_create_page():
+    username = session.get('username', None)
+    reservations = session.get('reservations', None)
+    return render_template('create.html', users=USERS, selected_username=username, reservations=reservations)
 
 def admin_required(f):
     @wraps(f)

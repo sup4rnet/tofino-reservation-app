@@ -37,28 +37,21 @@
                             <td>{{ rsvp.from }}</td>
                             <td>{{ rsvp.to }}</td>
                             <td>
-                                {% if session.admin_logged_in %}
-                                <form method="post" action="{{ url_for('toggle_priority') }}" class="d-inline">
-                                    <input type="hidden" name="reservation_id" value="{{ rsvp.id }}">
-                                    <input type="hidden" name="username" value="{{ selected_username }}">
-                                    <button type="submit" class="btn btn-sm {% if rsvp.high_priority %}btn-danger{% else %}btn-secondary{% endif %}" 
-                                            style="width:100%; text-align:left;">
-                                        {% if rsvp.high_priority %}
-                                        <i class="fa fa-arrow-down"></i> High Priority
-                                        {% else %}
-                                        <i class="fa fa-arrow-up"></i> Low Priority
-                                        {% endif %}
-                                    </button>
-                                </form>
-                                {% else %}
                                 <span class="badge {% if rsvp.high_priority %}badge-danger{% else %}badge-secondary{% endif %}">
-                                    {% if rsvp.high_priority %}High{% else %}Low{% endif %}
+                                    {% if rsvp.high_priority %}Urgent{% else %}Regular{% endif %}
                                 </span>
-                                {% endif %}
                             </td>
-                            <!-- Delete only if admin logged in -->
                             <td>
                                 {% if session.admin_logged_in %}
+                                <form method="post" action="{{ url_for('toggle_priority') }}" class="d-inline mr-1">
+                                    <input type="hidden" name="reservation_id" value="{{ rsvp.id }}">
+                                    <input type="hidden" name="username" value="{{ selected_username }}">
+                                    <button type="submit" class="btn btn-sm {% if rsvp.high_priority %}btn-outline-secondary{% else %}btn-outline-secondary{% endif %}">
+                                        Set Priority
+                                        <i class="fa fa-{% if rsvp.high_priority %}arrow-down{% else %}arrow-up{% endif %}"></i>
+                                    </button>
+                                </form>
+                                
                                 <form method="post" action="{{ url_for('delete_reservation') }}" class="d-inline">
                                     <input type="hidden" name="reservation_id" value="{{ rsvp.id }}">
                                     <input type="hidden" name="username" value="{{ selected_username }}">

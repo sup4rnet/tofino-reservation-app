@@ -1,0 +1,12 @@
+[Unit]
+Description=Access Reservation WebApp for Tofino
+After=network.target
+
+[Service]
+WorkingDirectory=/home/alessandro/tofino-rsvp-webapp/
+Environment="VIRTUAL_ENV=/home/alessandro/tofino-rsvp-webapp/.venv"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/alessandro/tofino-rsvp-webapp/.venv/bin/gunicorn -w 1 -b :8080 server:app
+
+[Install]
+WantedBy=multi-user.target
