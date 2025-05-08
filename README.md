@@ -13,7 +13,7 @@ User reservations are stored in a csv file under `.data/` folder. Manual edits t
 
 ### Prerequisites
 
-Install `requirements.txt` using
+Install `requirements.txt`
 
 ### Run Flask app
 ```bash
