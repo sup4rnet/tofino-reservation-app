@@ -12,7 +12,7 @@
 
     <h1>{% block title %} Create new reservation {% endblock %}</h1>
 
-    <form method="post">
+    <form method="post" action="{{ url_for('create') }}">
 
         <div class="form-group">
             <label for="target">Target</label>
@@ -129,8 +129,11 @@
             </button>
         </div>
     </div>
+    
+
     {% endif %}
 
+    <div class="mb-5 pb-5"></div>
 
     <!-- Modal -->
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">

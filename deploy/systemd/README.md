@@ -1,7 +1,7 @@
 ###  Note
 
-This is a local test on `restsrv01.polito.it` server. It has been automated with Ansible playbooks. Do not use it for production.
+This is a old local test on `restsrv01.polito.it` server. 
+It uses a systemd service to run the Flask app and the watcher service.
 
-### Installation 
-Scripts to install as a systemd service on linux and notify switches with `entr`.
+Do not use in production without testing and adapting the code to your needs.
 
