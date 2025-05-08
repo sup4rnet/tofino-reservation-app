@@ -4,7 +4,6 @@ echo "Starting up the webapp from $(pwd)=$DEBUG..."
 
 WORKDIR=$(pwd)
 
-
 # Start the webapp in the background
 cd ./web
 if [ -n "$DEBUG" ]; then
@@ -20,6 +19,6 @@ fi
 # This is a simple way to watch for changes in the file and run a command
 # to update the authorized users on the target machines
 
-echo "Listening for changes to database: $WORKDIR/web/.data/reservations.csv"
-cd $WORKDIR/web
-ls ./.data/reservations.csv | entr -spn "../on-rsvp-change.sh"
+cd $WORKDIR
+echo "Listening for changes to database: $DATABASEURL/reservations.csv"
+ls $DATABASEURL/reservations.csv | entr -spn "./on-rsvp-change.sh"

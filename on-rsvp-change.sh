@@ -7,15 +7,11 @@
 ###############################
 echo "Running on-rsvp-change.sh script"
 
-# First define required environment variables if not set
-: "${ADMIN_USER_ON_SWITCH:=admin}"
-: "${SSH_RESERVATIONS_CONFIG_ON_SWITCH:=/etc/ssh/reservations.conf}"
-
 # Get current timestamp
 NOW=$(date +%s)
 
 # Process reservations file
-tail -n +2 ./.data/reservations.csv | while IFS=, read -r id user target from_date to_date rest; do
+tail -n +2 $DATABASEURL/reservations.csv | while IFS=, read -r id user target from_date to_date rest; do
     # Convert dates to timestamps
     FROM=$(date -d "$from_date" +%s 2>/dev/null)
     TO=$(date -d "$to_date" +%s 2>/dev/null)
