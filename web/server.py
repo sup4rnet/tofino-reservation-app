@@ -292,18 +292,35 @@ def list():
     
     # Get the list of users for the dropdown
     users_df = pd.read_csv('.data/users.csv')
-    users = users_df.to_dict(orient='records')
+    users_df.to_dict(orient='records')
     
     session['username'] = username
     session['reservations'] = reservations.to_dict(orient='records')
 
     return redirect(url_for('create'))
-    # render_template(
-    #     'create.html',
-    #     reservations=reservations.to_dict(orient='records'),
-    #     users=users,
-    #     selected_username=username
-    # )    
+    
+
+@app.route('/api/active_reservations', methods=['GET'])
+def api_list():
+    """ 
+    API endpoint to get all reservations active at current time
+    """
+    # get target switch argument
+    target = request.args.get('target', None)
+    if not target:
+        # raise HTTP error
+        return "Target not specified"
+    # stripe ".polito.it" from target
+    target = target.replace('.polito.it', '')
+
+    now = pd.to_datetime('now')
+    
+    reservations = get_all_reservations()
+    # dataframe with active reservations
+    reservations = reservations[(reservations['to'] > now) & (reservations['target'] == target)]
+    
+    return reservations.to_json(orient='records', date_format="iso")
+
 
 @app.route('/confirm', methods=('GET', 'POST'))
 def confirm():
