@@ -12,29 +12,36 @@
 
     <h1>{% block title %} Create new reservation {% endblock %}</h1>
 
+
+        <!-- Reservation Policy Notice -->
+        <div class="alert alert-info mt-3" role="alert">
+            <i class="fa fa-info-circle mr-2"></i>
+            Please read our <a href="http://restsrv01.polito.it/supernet/docs/supernet/access/" target="_blank" class="alert-link">reservation policy</a> first.
+        </div>
+
     <form method="post" action="{{ url_for('create') }}">
 
+        <!-- Target dropdown with preserved selection -->
         <div class="form-group">
             <label for="target">Target</label>
             <select name="target" class="form-control">
-                <option {% if session['target']=='rest-bfsw01' %}selected{% endif %}>rest-bfsw01</option>
-                <option {% if session['target']=='rest-bfsw02' %}selected{% endif %}>rest-bfsw02</option>
+                <option {% if selected_target == 'rest-bfsw01' or session['target'] == 'rest-bfsw01' %}selected{% endif %}>rest-bfsw01</option>
+                <option {% if selected_target == 'rest-bfsw02' or session['target'] == 'rest-bfsw02' %}selected{% endif %}>rest-bfsw02</option>
             </select>
         </div>
 
-
+        <!-- From date picker with preserved value -->
         <div class="form-group">
             <label for="datetimepicker1">From:</label>
             <div class="input-group date" id="datetimepicker1" data-target-input="nearest">
-                <!-- <input type="text" name="datetime" class="form-control datetimepicker-input" data-target="#datetimepicker1"/> -->
-                <input type="text" name="from" class="form-control" />
+                <input type="text" name="from" class="form-control" id="fromDatePicker" />
                 <div class="input-group-append" data-target="#datetimepicker1" data-toggle="datetimepicker">
                     <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                 </div>
             </div>
         </div>
 
-
+        <!-- To date picker with preserved value -->
         <div class="form-group">
             <label for="datetimepicker2">To:</label>
             <div class="input-group date" id="datetimepicker2" data-target-input="nearest">
@@ -43,21 +50,65 @@
                     <div class="input-group-text"><i class="fa fa-calendar"></i></div>
                 </div>
             </div>
+            
+            <!-- Add script to populate date pickers and handle from/to relationship -->
             <script>
-                // Set default value for "to" date to now + 1 day
                 document.addEventListener('DOMContentLoaded', function() {
-                    let tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    // Get references to the date picker inputs
+                    const fromInput = document.getElementById('fromDatePicker');
+                    const toInput = document.getElementById('toDatePicker');
                     
-                    // Format the date as YYYY-MM-DD HH:MM
-                    let year = tomorrow.getFullYear();
-                    let month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-                    let day = String(tomorrow.getDate()).padStart(2, '0');
-                    let hours = String(tomorrow.getHours()).padStart(2, '0');
-                    let minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+                    // Function to set the default date (current date + 1 hour) for 'from' field
+                    function setDefaultFromDate() {
+                        let today = new Date();
+                        today.setHours(today.getHours() + 1);
+                        return formatDate(today);
+                    }
                     
-                    let formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
-                    document.getElementById('toDatePicker').value = formattedDate;
+                    // Function to format a date as YYYY-MM-DD HH:MM
+                    function formatDate(date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        return `${year}-${month}-${day} ${hours}:${minutes}`;
+                    }
+                    
+                    // Get session values if available (passed from server)
+                    const fromDateSession = "{{ from_date|safe if from_date else '' }}";
+                    const toDateSession = "{{ to_date|safe if to_date else '' }}";
+                    
+                    // Set initial values based on session or defaults
+                    if (fromDateSession) {
+                        fromInput.value = fromDateSession;
+                    } else {
+                        fromInput.value = setDefaultFromDate();
+                    }
+                    
+                    console.log("From date session:", fromDateSession);
+                    if (toDateSession) {
+                        toInput.value = toDateSession;
+                    } else if (fromInput.value) {
+                        // Set to = from + 1 day
+                        let fromDate = new Date(fromInput.value);
+                        let toDate = new Date(fromDate);
+                        toDate.setDate(toDate.getDate() + 1);
+                        toInput.value = formatDate(toDate);
+                    }
+                    console.log("To date session:", fromDateSession);
+                    
+                    // Update 'to' whenever 'from' changes
+                    fromInput.addEventListener('change', function() {
+                        if (this.value) {
+                            let fromDate = new Date(this.value);
+                            if (!isNaN(fromDate)) {
+                                let toDate = new Date(fromDate);
+                                toDate.setDate(toDate.getDate() + 1);
+                                toInput.value = formatDate(toDate);
+                            }
+                        }
+                    });
                 });
             </script>
         </div>
@@ -174,7 +225,7 @@
                         </select>
                     </div>
 
-                    <div class="form-group mt-3">
+                    <!-- <div class="form-group mt-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="high_priority" id="highPriorityCheck">
                             <label class="form-check-label" for="highPriorityCheck">
@@ -183,7 +234,7 @@
                             <small class="form-text text-muted">High priority reservations will be given preference in case of conflicts This is subject to approval by the cluster manager. 
                                 By checking this button you agree that cluster manager will be notified for approval.</small>
                         </div>
-                    </div>
+                    </div> -->
                     
                 </div>
                 <div class="modal-footer form-group">

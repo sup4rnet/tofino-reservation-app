@@ -179,12 +179,15 @@ def create():
                 flash('The target is available, proceed with button below.', category='success')
                 allow = True
             
+            # render template with sesssion data
             return render_template('create.html',
                                    users=USERS,
                                    show_rsvp=show_rsvp,
                                    reservations=rsvp_df.to_dict(orient='records'),
                                    selected_username=session.get('username', None),
-                                   show_rsvp_button=allow,)
+                                   show_rsvp_button=allow,
+                                   from_date=datefrom,
+                                   to_date=dateto,)
 
         elif 'reserve' in request.form: # user wants to reserve
             rsvp = {
@@ -217,7 +220,19 @@ def create():
 def get_create_page():
     username = session.get('username', None)
     reservations = session.get('reservations', None)
-    return render_template('create.html', users=USERS, selected_username=username, reservations=reservations)
+    
+    # Pass date values from session to template
+    from_date = session.get('from', None)
+    to_date = session.get('to', None)
+    target = session.get('target', None)
+    
+    return render_template('create.html', 
+                          users=USERS, 
+                          selected_username=username, 
+                          reservations=reservations,
+                          from_date=from_date,
+                          to_date=to_date,
+                          selected_target=target)
 
 def admin_required(f):
     @wraps(f)
