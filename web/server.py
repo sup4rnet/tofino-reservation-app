@@ -5,6 +5,8 @@ from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 
 MAX_DURATION_LOW_PRIO_HOURS = 24
+MAX_OUTSTANDING_RESERVATIONS = 3
+
 STATUS_CODE_OK = 0
 STATUS_CODE_BUSY = -1
 STATUS_CODE_BUSY_LOW_PRIO = -2
@@ -100,8 +102,8 @@ def validate(rsvp):
     
     current_rsvp = get_all_reservations()
 
-    # if user already has a not finished reservation, return error
-    if len(current_rsvp[(current_rsvp['username'] == rsvp['username']) & (current_rsvp['to'] > pd.to_datetime('now'))]) > 0:
+    # if user already has 3 non-finished reservation, return error
+    if len(current_rsvp[(current_rsvp['username'] == rsvp['username']) & (current_rsvp['to'] > pd.to_datetime('now'))]) >= MAX_OUTSTANDING_RESERVATIONS:
         return STATUS_CODE_ALREADY_RESERVED
     
     df = current_rsvp[current_rsvp['target'] == rsvp['target']]
@@ -198,7 +200,7 @@ def create():
             
             if new_id < 0:
                 if new_id == STATUS_CODE_ALREADY_RESERVED:
-                    flash('You already have a reservation in progress. Please finish it before making a new one.', category='danger')
+                    flash(f'You already {MAX_OUTSTANDING_RESERVATIONS} reservation in progress.', category='danger')
                 elif new_id == STATUS_CODE_BUSY:    
                     # error, not possible to reserve
                     flash('The target is not available in the selected time range. Please find a different time.', category='danger')
